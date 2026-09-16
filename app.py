@@ -15,28 +15,18 @@ def get_live_result():
 
     if player_sum == banker_sum:
         result = "tie"
-        tie_number = player_sum
     elif player_sum > banker_sum:
         result = "player"
-        tie_number = None
     else:
         result = "banker"
-        tie_number = None
 
     return {
         "result": result,
         "player_sum": player_sum,
         "banker_sum": banker_sum,
-        "tie_number": tie_number, # só vem número quando é tie
         "dices": [d1, d2, d3, d4],
-        "player_dices": [d1, d2],
-        "banker_dices": [d3, d4],
         "timestamp": int(time.time())
     }
-
-@app.route('/')
-def home():
-    return jsonify({"status": "API com Tie + número funcionando"})
 
 @app.route('/history')
 def history_endpoint():
@@ -47,14 +37,16 @@ def history_endpoint():
         history.append(get_live_result())
         if len(history) > 500:
             history.pop(0)
-    # Agora retorna "player" / "banker" / "tie-8" já com número
-    simple = []
+
+    final = []
     for h in history[-100:]:
         if h["result"] == "tie":
-            simple.append(f"tie-{h['tie_number']}")
+            final.append(f"tie-{h['player_sum']}")
+        elif h["result"] == "player":
+            final.append(f"player-{h['player_sum']}")
         else:
-            simple.append(h["result"])
-    return jsonify(simple)
+            final.append(f"banker-{h['banker_sum']}")
+    return jsonify(final)
 
 @app.route('/full')
 def full():
@@ -64,6 +56,13 @@ def full():
 def latest():
     data = get_live_result()
     history.append(data)
+    # retorna já formatado com número
+    if data["result"] == "tie":
+        data["formatted"] = f"tie-{data['player_sum']}"
+    elif data["result"] == "player":
+        data["formatted"] = f"player-{data['player_sum']}"
+    else:
+        data["formatted"] = f"banker-{data['banker_sum']}"
     return jsonify(data)
 
 if __name__ == '__main__':
